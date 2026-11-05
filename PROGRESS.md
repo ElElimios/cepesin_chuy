@@ -17,6 +17,7 @@ Primary Metric: **Macro F1-Score**
   - Measured and benchmarked processing times: baseline training time ($0.038$ s), baseline inference latency ($0.07$ ms/sample), pretrained inference latency ($0.08$ ms/sample).
   - Built a comprehensive comparative table and visualization plots (class distributions, confusion matrices, latency comparisons).
   - Formulated Sections 1, 2, and 3 in the technical notebook (`notebooks/entrenamiento.ipynb`) and verified individual baseline notebook (`notebooks/emilio_baseline.ipynb`).
+  - Checkpoint status: All 10 criteria of the official evaluation checklist completed and validated.
 - **What we haven't done yet**:
   - Fine-tuning a deep Spanish Transformer model (scheduled for Phase 2 / CP3).
   - Detailed error analysis of 5+ edge cases for the fine-tuned Transformer (scheduled for Phase 2 / CP4).
