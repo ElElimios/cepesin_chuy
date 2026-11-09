@@ -97,7 +97,6 @@ jupyter notebook notebooks/entrenamiento.ipynb
 
 ## 5. Team & Responsibilities
 - **Emilio (ElElimios):** TF-IDF sentence extractive algorithm, position weighting logic, ROUGE metric calculations, and technical report notebook integration.
-- **Chuy / Teammate:** Dataset collection and category stratification based on XL-Sum standards, broadcast time constraint validation.
 
 ---
 *Developed for RNAP Hack 2026 · Etapa 4 y PIA · UANL EIAO.*
