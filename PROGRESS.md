@@ -33,7 +33,7 @@ Repository Checkpoint: **CP4 (Fase 2: Evidencia de Aprendizaje Â· Prototipo)** â
       4. *Lexical Repetition Loops* (insufficient repetition penalty in administrative texts).
       5. *Temporal Anchor Bias* ("today" breaking news bias on historical retrospectives).
   - Validated the strict operational condition: **Zero articles with excess words**. 100.0% of generated test summaries strictly comply with $\le 120$ words ($0$ out of $4,763$ articles exceeded the limit).
-  - Updated `requirements.txt` with all dependencies (`gradio`, `peft`, `accelerate`, `transformers`, `torch`, `tabulate`).
+  - Updated `requirements.txt` with all dependencies (`gradio`, `peft`, `accelerate`, `transformers`, `torch`, `python-docx`, `python-pptx`, `tabulate`).
 - **What we haven't done yet**:
   - Live demo deployment and testing with surprise inputs from the judge (Phase 3 / PIA).
   - Writing Section 6 in the notebook covering cross-attention architectural deep dive and radio operating manual (Phase 3 / PIA).
