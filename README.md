@@ -5,6 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Hackathon: RNAP 2026](https://img.shields.io/badge/UANL-RNAP%20Hack%202026-red.svg)](https://github.com/ElElimios/cepesin_chuy)
 [![Status: Phase 2 Prototype CP4](https://img.shields.io/badge/Status-CP4%20Evaluated-brightgreen.svg)](https://github.com/ElElimios/cepesin_chuy)
+[![Live Demo: GitHub Pages](https://img.shields.io/badge/Demo-GitHub%20Pages-blueviolet.svg)](https://elelimios.github.io/cepesin_chuy/)
 
 **Escuela Industrial y Preparatoria Técnica "Álvaro Obregón" (UANL)**  
 **Unidad de Aprendizaje:** Redes Neuronales y Aprendizaje Profundo  
