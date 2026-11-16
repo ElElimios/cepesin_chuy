@@ -7,7 +7,7 @@
 [![Status: Phase 2 Prototype CP4](https://img.shields.io/badge/Status-CP4%20Evaluated-brightgreen.svg)](https://github.com/ElElimios/cepesin_chuy)
 
 **Escuela Industrial y Preparatoria Técnica "Álvaro Obregón" (UANL)**  
-**Unidad de Aprendizaje:** Redes Neuronales y Aprendizaje Profundo & Comunicación Integral en Inglés Técnico I  
+**Unidad de Aprendizaje:** Redes Neuronales y Aprendizaje Profundo  
 **Team:** `cepesin_chuy` (Team 5)  
 **Deliverable:** Technical Report & Prototype Interface (`CP4` - November 12, 2026)
 
@@ -34,11 +34,9 @@ Develop an end-to-end NLP solution that summarizes Spanish news articles into co
 
 ```text
 cepesin_chuy/
-├── README.md                                    # Technical and product overview in English
+├── README.md                                    # Technical and product overview
 ├── PROGRESS.md                                  # Checkpoint audit log (CP1, CP2, CP3, CP4)
 ├── requirements.txt                             # Library dependencies (gradio, peft, torch, etc.)
-├── RNAP_Hack_2026_English_Nov12_Troubleshooting_Report.pptx # English Act. 12 & D3 presentation
-├── EA_Act12_Troubleshooting_Report_Team5.docx   # Written English troubleshooting report
 ├── app/
 │   └── app.py                                   # Gradio interactive web UI with Fact Guard
 ├── app.py                                       # Root launcher for Gradio web application
@@ -47,11 +45,10 @@ cepesin_chuy/
 │   ├── spanish_train_sample.jsonl               # XL-Sum Spanish training split (3,500 samples)
 │   ├── spanish_val.jsonl                        # XL-Sum Spanish validation split (4,763 samples)
 │   └── spanish_test.jsonl                       # XL-Sum Spanish test split (4,763 samples)
-├── notebooks/                                   # Jupyter technical reports
-│   ├── entrenamiento.ipynb                      # Master technical notebook (Sections 1 to 5)
-│   ├── comparativa_fase2.png                    # Benchmark multi-metric chart
-│   └── RNAP_Track2_AKS(CP3).ipynb               # LoRA fine-tuning experimental run
-└── [Official instructions and PDF rubrics]
+└── notebooks/                                   # Jupyter technical reports
+    ├── entrenamiento.ipynb                      # Master technical notebook (Sections 1 to 5)
+    ├── comparativa_fase2.png                    # Benchmark multi-metric chart
+    └── RNAP_Track2_AKS(CP3).ipynb               # LoRA fine-tuning experimental run
 ```
 
 ---
@@ -94,7 +91,7 @@ jupyter notebook notebooks/entrenamiento.ipynb
 - **Emilio Antonio Gómez Montes (2250704):** TF-IDF sentence extractive baseline, Gradio interface v1 development, Fact Guard entity engine, and master notebook integration.
 - **Israel Aleksander Sánchez González (2251085):** mT5 LoRA fine-tuning training loop on GPU, hyperparameter tuning, and checkpoint evaluations.
 - **Kevin Adrián Hernández Cayetano (2251147):** XL-Sum dataset curation, locution timing validation, and error case categorization.
-- **Mía Valentina Pérez Cepeda (2251441):** Data analysis, editorial criteria evaluation, and English troubleshooting audit documentation.
+- **Mía Valentina Pérez Cepeda (2251441):** Data analysis, editorial criteria evaluation, and test groundings audit.
 
 ---
 *Developed for RNAP Hack 2026 · Etapa 4 y PIA · UANL EIAO.*
