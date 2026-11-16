@@ -1,8 +1,73 @@
 # Progress Log - RNAP Hack 2026
 
-Team: **cepesin_chuy**  
+Team: **cepesin_chuy** (Team 5)  
 Challenge: **Track 2 - News in 60 Seconds (Radio Cumbres)**  
-Primary Metrics: **ROUGE (ROUGE-1, ROUGE-2, ROUGE-L) and Strict Word Count Limit ($\le 120$ words / 60 seconds)**  
+Primary Metrics: **ROUGE (ROUGE-1, ROUGE-2, ROUGE-L), Strict Word Limit ($\le 120$ words / $\le 60$ s on air), and Zero Excess Words Guarantee**  
+Repository Checkpoint: **CP4 (Fase 2: Evidencia de Aprendizaje · Prototipo)** — November 12, 2026  
+
+---
+
+## CP4 - 2026-11-12
+- **What we have done**:
+  - Built and deployed the interactive web application interface v1 (`app/app.py` and root `app.py`) powered by **Gradio**, fulfilling all operational requirements for Track 2 and the Phase 2 rubric.
+  - Connected the interface to all three evaluated models:
+    1. **Solución Transformer:** `csebuetnlp/mT5_multilingual_XLSum` with LoRA adapter fine-tuned for radio news capsules.
+    2. **Modelo Base:** Sentence-level extractive TF-IDF with lead-bias position weighting.
+    3. **Modelo Preentrenado:** `mT5_multilingual_XLSum` vanilla zero-shot.
+  - Implemented the **Live Locution Dashboard**:
+    - Real-time word counter with progress against the 120-word budget (`palabras / 120`).
+    - Estimated radio broadcast read time (`palabras / 2.0` seconds).
+    - Status badge: `✅ CUMPLE ESTÁNDAR RADIO CUMBRES: <= 120 palabras (Sin exceso de palabras)`.
+  - Implemented the **Fact Guard** verification engine:
+    - Extracts all numeric amounts, percentages, currencies, dates, and named entities (capitalized entities).
+    - Cross-references generated tokens against the full original Spanish news source.
+    - Dynamically highlights ungrounded numbers or names in **bold red** (`#dc2626`) with an alert tooltip warning the radio host against live broadcasting.
+    - Displays a real-time **Factual Faithfulness Score** (% of grounded entities) and detailed audit notes.
+  - Completed **Section 5 (Evaluación y Errores)** in the master technical notebook (`notebooks/entrenamiento.ipynb`):
+    - Comparative evaluation table across 4,763 articles on the Spanish XL-Sum test set.
+    - Generated Matplotlib multi-metric visualization (`notebooks/comparativa_fase2.png`) comparing ROUGE-1, ROUGE-2, ROUGE-L and airtime vs the 60-second broadcast ceiling.
+    - Conducted an in-depth qualitative and quantitative error analysis across **5 real failure modes**:
+      1. *Numeric Interpolation / Hallucination* (cross-attention averaging nearby quantities).
+      2. *Premature Truncation on Run-on Subordinate Clauses* (sentence boundary cutter stepping back).
+      3. *Proper Noun Simplification* (SentencePiece subword penalty on non-Romance names).
+      4. *Lexical Repetition Loops* (insufficient repetition penalty in administrative texts).
+      5. *Temporal Anchor Bias* ("today" breaking news bias on historical retrospectives).
+  - Validated the strict operational condition: **Zero articles with excess words**. 100.0% of generated test summaries strictly comply with $\le 120$ words ($0$ out of $4,763$ articles exceeded the limit).
+  - Updated `requirements.txt` with all dependencies (`gradio`, `peft`, `accelerate`, `transformers`, `torch`, `python-docx`, `python-pptx`, `tabulate`).
+- **What we haven't done yet**:
+  - Live demo deployment and testing with surprise inputs from the judge (Phase 3 / PIA).
+  - Writing Section 6 in the notebook covering cross-attention architectural deep dive and radio operating manual (Phase 3 / PIA).
+  - Marking official git release tag `v1.0`.
+- **Next step**:
+  - Package local offline standalone runner for the laptop demo before the judge.
+  - Rehearse the 20-minute product presentation and 5-minute live demo for November 19.
+- **Who did what**:
+  - Emilio: Designed and programmed the Gradio interface v1 (`app/app.py`), the Fact Guard entity matching engine with red highlighting, and integrated the complete evaluation and error analysis into `notebooks/entrenamiento.ipynb`.
+  - Aleks / Israel: Calibrated the LoRA generation parameters, tested interactive inference on sample articles, and curated test failure cases.
+  - Kevin & Mía: Audited test case groundings, validated locution timing benchmarks, and prepared the technical documentation.
+
+---
+
+## CP3 - 2026-11-12
+- **What we have done**:
+  - Transitioned the training and evaluation corpus to the full-scale Spanish subset of **XL-Sum (BBC Mundo)**, incorporating 3,500 training articles, 4,763 validation articles, and 4,763 test articles (`data/spanish_*.jsonl`).
+  - Constructed the **Solución con Transformer**: selected and fine-tuned `csebuetnlp/mT5_multilingual_XLSum` (582M parameters Seq2Seq encoder-decoder) using **PEFT LoRA (Low-Rank Adaptation)**.
+  - Configured LoRA with rank $r=16$, $\alpha=32$, dropout $0.05$, targeting query (`q`) and value (`v`) attention projection matrices, training only 1,843,200 parameters (0.316% of total) in 2.89 minutes on GPU T4 without catastrophic forgetting.
+  - Designed the specialized radio training target (`construir_objetivo_radio`) combining lead facts with non-redundant salient sentences to establish a consistent 90-120 word broadcast capsule style.
+  - Created the prompt prefix: `"Resume esta noticia para radio en 100 a 120 palabras usando solo datos del texto: "`.
+  - Calibrated Seq2Seq generation hyperparameters: `min_new_tokens=138`, `max_new_tokens=168`, `repetition_penalty=1.15`, `no_repeat_ngram_size=3`, `num_beams=1`.
+  - Engineered the radio sentence closure algorithm `cerrar_oracion_radio(texto, max_words=120)` with a double safety check, strictly guaranteeing **zero articles with excess words** ($\le 120$ words across 100% of cases).
+  - Completed **Section 4 (Solución con Transformer)** in `notebooks/entrenamiento.ipynb` with complete architecture justification, hyperparameter table, and parameter effect analysis.
+  - Evaluated on test set: ROUGE-1: 0.2177, ROUGE-2: 0.0570, ROUGE-L: 0.1407, Average words: 89.5, On-air time: 44.7 s, Compliance $\le 120$ words: 100.0%, Excess words: 0 (0.0%).
+- **What we haven't done yet**:
+  - Interactive Gradio graphical user interface (addressed in CP4).
+  - Fact Guard hallucination highlighter (addressed in CP4).
+- **Next step**:
+  - Develop Gradio web UI and Fact Guard audit engine for CP4.
+- **Who did what**:
+  - Aleks / Israel: Configured and executed the LoRA fine-tuning training loop on Colab GPU, generated comparative checkpoint metrics, and logged training loss curves.
+  - Emilio: Implemented the `cerrar_oracion_radio` word-capping algorithm, formulated the prompt conditioning strategy, and integrated Section 4 documentation into the master technical report.
+  - Kevin & Mía: Formatted the XL-Sum dataset splits, analyzed target length distributions, and verified hyperparameter logging.
 
 ---
 

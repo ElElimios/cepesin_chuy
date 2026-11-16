@@ -3,13 +3,13 @@
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Hackathon: RNAP 2026](https://img.shields.io/badge/UANL-RNAP%20Hack%202026-red.svg)](https://www.uanl.mx/)
+[![Hackathon: RNAP 2026](https://img.shields.io/badge/UANL-RNAP%20Hack%202026-red.svg)](https://github.com/ElElimios/cepesin_chuy)
+[![Status: Phase 2 Prototype CP4](https://img.shields.io/badge/Status-CP4%20Evaluated-brightgreen.svg)](https://github.com/ElElimios/cepesin_chuy)
 
-> **Academic Course:** Neural Networks and Deep Learning (RNAP)  
-> **Institution:** UANL · Escuela Industrial y Preparatoria Técnica "Álvaro Obregón"  
-> **Team:** `cepesin_chuy`  
-> **Track:** Track 2 — News in 60 Seconds  
-> **Phase 1 Milestone:** Baseline Models & Technical Report (`CP2` - November 5, 2026)
+**Escuela Industrial y Preparatoria Técnica "Álvaro Obregón" (UANL)**  
+**Unidad de Aprendizaje:** Redes Neuronales y Aprendizaje Profundo & Comunicación Integral en Inglés Técnico I  
+**Team:** `cepesin_chuy` (Team 5)  
+**Deliverable:** Technical Report & Prototype Interface (`CP4` - November 12, 2026)
 
 ---
 
@@ -26,7 +26,7 @@ Historically, two news producers summarized incoming stories manually starting a
 2. Models hallucinated figures and names (e.g., broadcasting an incorrect financial figure on live radio).
 
 ### The Objective
-Develop an end-to-end NLP solution that summarizes Spanish news articles into concise, broadcast-ready summaries ($\le 120$ words / $\le 60$ seconds) with **100% factual fidelity** (zero invented facts, names, or numbers).
+Develop an end-to-end NLP solution that summarizes Spanish news articles into concise, broadcast-ready summaries ($\le 120$ words / $\le 60$ seconds) with **100% factual fidelity** (zero invented facts, names, or numbers) and **0 articles with word excess**.
 
 ---
 
@@ -34,48 +34,40 @@ Develop an end-to-end NLP solution that summarizes Spanish news articles into co
 
 ```text
 cepesin_chuy/
-├── README.md                # Technical and product overview in English (PIA English deliverable)
-├── PROGRESS.md              # Checkpoint log (CP1, CP2, CP3, CP4)
-├── requirements.txt         # Library dependencies
-├── RNAP_Hack_2026_Challenge_Tracks.pdf # Official competition tracks
-├── RNAP_Hack_2026_Guia_GitHub.pdf      # GitHub workflow instructions
-├── RNAP_Hack_2026_Instrucciones_Redes_Neuronales.pdf # Evaluation rubric
-├── data/                    # Dataset samples, splits, and documentation
-│   ├── README.md            # Dataset specification and metadata
-│   ├── dataset_sample.csv   # Master corpus (120 articles across 10 categories)
-│   ├── train.csv            # Stratified training split (70% - 84 articles)
-│   ├── val.csv              # Stratified validation split (15% - 18 articles)
-│   └── test.csv             # Stratified test split (15% - 18 articles)
-├── notebooks/               # Jupyter technical reports
-│   ├── entrenamiento.ipynb  # Master technical notebook (Sections 1 to 6)
-│   └── emilio_baseline.ipynb# Emilio's individual experimental baseline notebook
-└── app/                     # Gradio interface (scheduled for Phases 2 & 3)
+├── README.md                                    # Technical and product overview in English
+├── PROGRESS.md                                  # Checkpoint audit log (CP1, CP2, CP3, CP4)
+├── requirements.txt                             # Library dependencies (gradio, peft, torch, etc.)
+├── RNAP_Hack_2026_English_Nov12_Troubleshooting_Report.pptx # English Act. 12 & D3 presentation
+├── EA_Act12_Troubleshooting_Report_Team5.docx   # Written English troubleshooting report
+├── app/
+│   └── app.py                                   # Gradio interactive web UI with Fact Guard
+├── app.py                                       # Root launcher for Gradio web application
+├── data/                                        # Datasets and corpora
+│   ├── README.md                                # Dataset metadata and documentation
+│   ├── spanish_train_sample.jsonl               # XL-Sum Spanish training split (3,500 samples)
+│   ├── spanish_val.jsonl                        # XL-Sum Spanish validation split (4,763 samples)
+│   └── spanish_test.jsonl                       # XL-Sum Spanish test split (4,763 samples)
+├── notebooks/                                   # Jupyter technical reports
+│   ├── entrenamiento.ipynb                      # Master technical notebook (Sections 1 to 5)
+│   ├── comparativa_fase2.png                    # Benchmark multi-metric chart
+│   └── RNAP_Track2_AKS(CP3).ipynb               # LoRA fine-tuning experimental run
+└── [Official instructions and PDF rubrics]
 ```
 
 ---
 
-## 3. Phase 1 (Baseline Models) Summary
+## 3. Comparative Evaluation (Test Set: 4,763 Articles)
 
-### Evaluation Metrics
-- **Primary Quality Metrics:** **ROUGE-1, ROUGE-2, and ROUGE-L** (F1 scores) evaluated against journalist-written reference summaries (*XL-Sum standard*).
-- **Primary Operational Constraints:**
-  - **Word Limit:** $\le 120$ words (100% compliance required).
-  - **Estimated On-Air Read Time:** $\le 60.0$ seconds.
-  - **Factual Faithfulness:** 0 ungrounded facts or invented numbers.
+| Model | Approach | ROUGE-1 | ROUGE-2 | ROUGE-L | Avg. Words | Locution Time | $\le 120$ words | Excess Words | Latency / Art. |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **1. Base Model (TF-IDF)** | Extractive (Lead Bias) | 0.1719 | 0.0339 | 0.1115 | 113.2 pal. | 56.6 s | **100.0%** | **0 (0.0%)** | 5.26 ms |
+| **2. Pretrained (mT5 Vanilla)** | Abstractive (Zero-FT) | 0.2999 | 0.1119 | 0.2310 | 18.5 pal. | 9.2 s | **100.0%** | **0 (0.0%)** | 220.94 ms |
+| **3. Solution (mT5 + LoRA Radio)** | Abstractive (Fine-Tuned) | 0.2177 | 0.0570 | 0.1407 | 89.5 pal. | 44.7 s | **100.0%** | **0 (0.0%)** | 231.66 ms |
 
-### Text Representation
-- **Baseline (Extractive):** **Sentence-level TF-IDF with Lead Position Weighting (*lead bias*)**. Prioritizes informative sentences located in the news lead (inverted pyramid structure) and selects sentences greedily within the 120-word budget.
-- **Advanced (Phases 2 & 3):** Contextual subword tokenization (SentencePiece) and cross-attention encoder-decoder representations via `csebuetnlp/mT5_multilingual_XLSum`.
-
-### Comparative Results on Test Set (18 Articles)
-| Model | Approach | ROUGE-1 | ROUGE-2 | ROUGE-L | Avg. Words | Read Time | $\le 120$ words | Factual Faithfulness | Latency |
-|---|---|---|---|---|---|---|---|---|---|
-| **Base Model (Extractive TF-IDF)** | Extractive (supervised) | **0.3482** | **0.0896** | **0.2110** | 101.0 words | **50.5 s** | **100.0%** | **100% (zero hallucination)** | **0.78 ms / art.** |
-| **Pretrained Model (XL-Sum Abstractive)** | Abstractive (no fine-tuning) | **0.4184** | **0.2494** | **0.2927** | 65.6 words | **32.8 s** | **100.0%** | Requires Fact Guard | **< 0.01 ms / art.** |
-
-#### Key Takeaway & Phase 2 Roadmap:
-- The TF-IDF extractive baseline provides **100% factual safety** (never invents figures) and strictly respects the radio broadcast time ($\le 60$ s) with sub-millisecond execution.
-- In **Phase 2 (November 12)**, we will fine-tune **mT5_multilingual_XLSum** and integrate a **Fact Guard** verification engine to highlight in red any numbers or names not found in the source article.
+### Key Achievements in Phase 2 (CP3 & CP4):
+- **Zero Excess Words Guarantee:** 100.0% of generated test summaries strictly comply with $\le 120$ words ($0$ articles exceeded the threshold).
+- **Broadcast Coverage:** Lifted generation length from 18.5 words (vanilla mT5) to **89.5 words (44.7 seconds on air)**, perfectly filling the morning news slot.
+- **Fact Guard Protection:** Entity cross-matching highlights ungrounded numbers or names in bold red in the Gradio interface, ensuring live broadcast safety.
 
 ---
 
@@ -89,14 +81,20 @@ cd cepesin_chuy
 # Install dependencies
 pip install -r requirements.txt
 
-# Run the master technical report
+# Run the interactive Gradio interface (v1)
+python app.py
+
+# Or explore the master technical report
 jupyter notebook notebooks/entrenamiento.ipynb
 ```
 
 ---
 
-## 5. Team & Responsibilities
-- **Emilio (ElElimios):** TF-IDF sentence extractive algorithm, position weighting logic, ROUGE metric calculations, and technical report notebook integration.
+## 5. Team & Responsibilities (Team 5)
+- **Emilio Antonio Gómez Montes (2250704):** TF-IDF sentence extractive baseline, Gradio interface v1 development, Fact Guard entity engine, and master notebook integration.
+- **Israel Aleksander Sánchez González (2251085):** mT5 LoRA fine-tuning training loop on GPU, hyperparameter tuning, and checkpoint evaluations.
+- **Kevin Adrián Hernández Cayetano (2251147):** XL-Sum dataset curation, locution timing validation, and error case categorization.
+- **Mía Valentina Pérez Cepeda (2251441):** Data analysis, editorial criteria evaluation, and English troubleshooting audit documentation.
 
 ---
 *Developed for RNAP Hack 2026 · Etapa 4 y PIA · UANL EIAO.*
