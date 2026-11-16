@@ -1,12 +1,14 @@
 import os
 import re
+import sys
 import time
 import torch
 import gradio as gr
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
-# Carga el modelo ajustado local si existe en la carpeta; si no, descarga mT5_multilingual_XLSum
-LOCAL_MODEL_DIR = os.path.join(os.path.dirname(__file__), "modelo_finetuned")
+# Detecta automáticamente si corre como archivo .py o dentro de una celda de Colab
+BASE_DIR = os.path.dirname(os.path.abspath(__file__)) if "__file__" in globals() else os.getcwd()
+LOCAL_MODEL_DIR = os.path.join(BASE_DIR, "modelo_finetuned")
 DEFAULT_MODEL = "csebuetnlp/mT5_multilingual_XLSum"
 
 MODEL_PATH = LOCAL_MODEL_DIR if os.path.isdir(LOCAL_MODEL_DIR) else DEFAULT_MODEL
@@ -48,7 +50,6 @@ def resumir_noticia(articulo: str, min_palabras: int = 55, max_palabras: int = 1
         truncation=True,
     ).to(device)
 
-    # Convertimos el mínimo de palabras deseado a un aproximado de sub-tokens
     min_tokens = max(35, int(min_palabras * 1.4))
 
     with torch.no_grad():
@@ -65,7 +66,6 @@ def resumir_noticia(articulo: str, min_palabras: int = 55, max_palabras: int = 1
 
     resumen = tokenizer.decode(output_ids[0], skip_special_tokens=True).strip()
 
-    # Regla estricta de Radio Cumbres: máximo 120 palabras (60 segundos a 2 palabras/seg)
     palabras = resumen.split()
     limite = min(int(max_palabras), 120)
     if len(palabras) > limite:
@@ -135,4 +135,5 @@ demo = gr.Interface(
 )
 
 if __name__ == "__main__":
-    demo.launch(server_name="127.0.0.1", server_port=7860, share=False)
+    en_colab = "google.colab" in sys.modules
+    demo.launch(share=en_colab)
