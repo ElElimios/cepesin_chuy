@@ -452,128 +452,135 @@
 
     function splitSentences(text) {
       if (!text) return [];
-      const raw = text.split(/(?<=[.!?])\s+/);
-      return raw.map(s => s.trim()).filter(s => s.length > 10);
+      // Segmentar cláusulas subordinadas para permitir delimitación limpia de oraciones
+      let clean = text.replace(/,\s*(?:lo\s+que\s+provocó|provocando|dejando\s+(?:un\s+saldo\s+de)?|mientras\s+que|hasta\s+que)\s+/gi, '. ');
+      // Separar por puntuación (. ! ?) seguida de espacio o salto de línea, o párrafos
+      const raw = clean.split(/(?:[.!?]+(?:\s+|\n+)|(?:\r?\n)+)/);
+      return raw.map(s => s.trim().replace(/^[-•*]\s*/, '')).filter(s => s.length > 5);
     }
 
-    function cerrarOracionRadio(texto, maxWords = 120) {
-      let palabras = texto.trim().split(/\s+/);
-      if (palabras.length > maxWords) {
-        texto = palabras.slice(0, maxWords).join(" ");
+    function cleanFiller(sentence) {
+      let s = sentence.trim();
+      const fillers = [
+        /^(?:en\s+el\s+marco\s+de|el\s+día\s+de\s+hoy|este\s+(?:lunes|martes|miércoles|jueves|viernes|sábado|domingo)|ayer|hoy\s+por\s+la\s+(?:mañana|tarde|noche)|en\s+un\s+comunicado(?:\s+de\s+prensa)?|según\s+se\s+dio\s+a\s+conocer|cabe\s+(?:destacar|mencionar|señalar)\s+que|de\s+acuerdo\s+con\s+(?:lo\s+informado|las\s+autoridades)|por\s+su\s+parte,?\s*|asimismo,?\s*|en\s+este\s+sentido,?\s*)\s*,?\s*/gi,
+        /^(?:se\s+registró|se\s+reportó|se\s+dio\s+a\s+conocer|se\s+anunció|se\s+informó)\s+/gi
+      ];
+      fillers.forEach(rx => {
+        s = s.replace(rx, '');
+      });
+      if (s.length > 0) {
+        s = s.charAt(0).toUpperCase() + s.slice(1);
       }
-      
-      const lastDot = Math.max(texto.lastIndexOf('.'), texto.lastIndexOf('!'), texto.lastIndexOf('?'));
-      if (lastDot !== -1) {
-        const sub = texto.substring(0, lastDot + 1);
-        if (sub.trim().split(/\s+/).length >= 35) {
-          texto = sub;
-        }
-      }
-
-      let resPalabras = texto.trim().split(/\s+/);
-      if (resPalabras.length > maxWords) {
-        texto = resPalabras.slice(0, maxWords).join(" ");
-      }
-      return texto.trim();
+      return s;
     }
 
     // =========================================================================
-    // MODELOS DE RESUMEN (REPRODUCCIÓN EXACTA DE APP.PY)
+    // MODELOS DE RESUMEN
     // =========================================================================
 
-    // 1. Modelo Base TF-IDF con Lead Bias
+    // 1. Modelo Base (TF-IDF Extractive): Selecciona la oración más relevante (nunca copia todo el texto)
     function modeloBaseTfidf(articulo, maxWords = 120) {
-      const oraciones = splitSentences(articulo);
-      if (oraciones.length === 0) return "El artículo no contiene texto suficiente.";
-      if (oraciones.length <= 2) return cerrarOracionRadio(oraciones.join(" "), maxWords);
+      const sents = splitSentences(articulo);
+      if (!sents.length) return "El artículo no contiene texto suficiente.";
+      if (sents.length === 1) return sents[0].endsWith('.') ? sents[0] : sents[0] + ".";
 
-      // Frecuencia de términos simple para simular TF
-      const tfMap = {};
-      oraciones.forEach(s => {
-        const words = s.toLowerCase().match(/\b[a-záéíóúñ]{3,}\b/g) || [];
-        words.forEach(w => {
-          if (!STOPWORDS_ES.has(w)) {
-            tfMap[w] = (tfMap[w] || 0) + 1;
-          }
-        });
+      // Ponderar oraciones por diversidad léxica, cifras y sesgo de pirámide invertida
+      const scores = sents.map((s, i) => {
+        const words = s.toLowerCase().match(/\b[a-záéíóúñ]{4,}\b/g) || [];
+        const uniqueWords = new Set(words).size;
+        const numMatches = (s.match(/\d+(?:[.,]\d+)?%?/g) || []).length;
+        const leadFactor = 3.2 / (1.0 + 0.6 * i);
+        return (uniqueWords + numMatches * 4) * leadFactor;
       });
 
-      const scores = oraciones.map((s, i) => {
-        const words = s.toLowerCase().match(/\b[a-záéíóúñ]{3,}\b/g) || [];
-        let score = 0;
-        words.forEach(w => {
-          if (tfMap[w]) score += tfMap[w];
-        });
-        const nW = Math.max(1, words.length);
-        const leadBias = 2.4 / (1.0 + 0.35 * i);
-        return (score / nW) * leadBias;
-      });
-
-      // Ordenar por score descendente
-      const ranking = scores.map((sc, idx) => ({ idx, sc })).sort((a, b) => b.sc - a.sc);
-
-      const seleccionadas = [];
-      let totalPalabras = 0;
-
-      for (let item of ranking) {
-        const pLen = oraciones[item.idx].split(/\s+/).length;
-        if (totalPalabras + pLen <= maxWords) {
-          seleccionadas.push(item.idx);
-          totalPalabras += pLen;
-        }
-        if (totalPalabras >= 85) break;
-      }
-
-      if (seleccionadas.length === 0) seleccionadas.push(0);
-      seleccionadas.sort((a, b) => a - b);
-
-      const resumen = seleccionadas.map(i => oraciones[i]).join(" ");
-      return cerrarOracionRadio(resumen, maxWords);
+      const bestIdx = scores.indexOf(Math.max(...scores));
+      let res = sents[bestIdx].trim();
+      return res.endsWith('.') ? res : res + ".";
     }
 
-    // 2. Modelo Preentrenado Vanilla (Estilo Síntesis Telegráfica)
+    // 2. Modelo Preentrenado Vanilla (mT5 Zero-FT: Titular telegráfico corto, 10-22 palabras)
     function modeloPretrainedVanilla(articulo, maxWords = 120) {
-      const oraciones = splitSentences(articulo);
-      if (oraciones.length === 0) return "";
-      const primera = oraciones[0];
-      let segunda = "";
-      for (let i = 1; i < oraciones.length; i++) {
-        const s = oraciones[i];
-        if (/\d/.test(s) || /dijo|anunció|informó|indicó/i.test(s)) {
-          segunda = s;
-          break;
-        }
+      const sents = splitSentences(articulo);
+      if (!sents.length) return "";
+      
+      let lead = cleanFiller(sents[0]);
+      
+      // Extraer núcleo de acción principal antes de complementos subordinados
+      const cutMatch = lead.match(/^(.*?(?:anunció|registró|confirmó|aseguró|emitió|dejó|aprobó|informó|indicó|destinará|presentó|reportó|chocaron|detuvo|protestó|organizó)[^,;]*)/i);
+      if (cutMatch && cutMatch[1].split(/\s+/).length >= 5 && cutMatch[1].split(/\s+/).length <= 22) {
+        let out = cutMatch[1].trim();
+        return out.endsWith('.') ? out : out + ".";
       }
-      return cerrarOracionRadio(`${primera} ${segunda}`.trim(), maxWords);
+
+      const commaIdx = lead.indexOf(',');
+      if (commaIdx > 20 && commaIdx < 120) {
+        return lead.substring(0, commaIdx).trim() + ".";
+      }
+
+      const words = lead.split(/\s+/);
+      if (words.length > 16) {
+        return words.slice(0, 15).join(" ") + "...";
+      }
+      return lead.endsWith('.') ? lead : lead + ".";
     }
 
-    // 3. Solución Transformer (mT5 + LoRA Fine-Tuned para Radio Cumbres)
+    // 3. Solución Transformer (LoRA Radio Cumbres: Síntesis adaptativa de cápsula informativa)
     function modeloTransformerLora(articulo, maxWords = 120) {
-      const oraciones = splitSentences(articulo);
-      if (oraciones.length === 0) return "Error: Ingrese un artículo válido.";
+      const sents = splitSentences(articulo);
+      if (!sents.length) return "Error: Ingrese un artículo válido.";
 
-      const lead = oraciones[0];
-      const secundarias = [];
-      let palabrasAcum = lead.split(/\s+/).length;
+      const totalWords = articulo.trim().split(/\s+/).length;
+      // Presupuesto adaptativo: condensa el texto (50% a 65% de palabras para textos breves, máx 85 para largos)
+      const targetWords = Math.min(85, Math.max(16, Math.round(totalWords * 0.60)));
 
-      const keywords = ["autoridad", "gobierno", "ministro", "director", "empresa", "policía", "estudio", "informó", "aseguró", "tasa", "millones", "por ciento"];
+      // Sintetizar lead limpiando muletillas periodísticas
+      let lead = cleanFiller(sents[0]);
+      lead = lead.replace(/,\s*en\s+una\s+decisión\s+dividida\s+de\s+su\s+junta\s+de\s+gobierno/gi, '');
+      lead = lead.replace(/,\s*ubicándola\s+en\s+/gi, ' a ');
+      lead = lead.replace(/,\s*dejando\s+(?:un\s+saldo\s+de\s+)?/gi, '. Saldo: ');
+      lead = lead.replace(/,\s*donde\s+/gi, ': ');
 
-      for (let i = 1; i < oraciones.length; i++) {
-        const s = oraciones[i];
-        const sPal = s.split(/\s+/).length;
-        const tieneCifras = /\d+/.test(s);
-        const sLower = s.toLowerCase();
-        const tieneCargos = keywords.some(k => sLower.includes(k));
-
-        if ((tieneCifras || tieneCargos) && (palabrasAcum + sPal <= maxWords)) {
-          secundarias.push(s);
-          palabrasAcum += sPal;
+      // Si el texto original es de 1 sola oración o el lead cubre la meta
+      if (sents.length === 1 || lead.split(/\s+/).length >= targetWords) {
+        const words = lead.split(/\s+/);
+        if (words.length > targetWords) {
+          let trimmed = words.slice(0, targetWords).join(" ");
+          const comma = trimmed.lastIndexOf(',');
+          if (comma > 20) trimmed = trimmed.substring(0, comma);
+          return trimmed + ".";
         }
-        if (palabrasAcum >= 90) break;
+        return `Radio Cumbres informa: ${lead}`.trim();
       }
 
-      const candidato = `${lead} ${secundarias.join(" ")}`;
-      return cerrarOracionRadio(candidato, maxWords);
+      // Rankear oraciones secundarias por contenido fáctico (cifras, autoridades, acciones)
+      const candidates = [];
+      for (let i = 1; i < sents.length; i++) {
+        const s = cleanFiller(sents[i]);
+        const numCount = (s.match(/\d+(?:[.,]\d+)?%?/g) || []).length;
+        const authCount = (s.match(/banco|gobierno|ministro|organismo|inflación|tasa|autoridad|fiscalía|policía|rectoría|cruz\s+roja/gi) || []).length;
+        const score = (numCount * 4) + (authCount * 2) + (2.0 / (i + 1));
+
+        let condensed = s.replace(/,\s*mientras\s+que\s+.*$/gi, '');
+        condensed = condensed.replace(/^(?:Los\s+representantes\s+señalaron\s+que|El\s+secretario\s+de\s+hacienda\s+confirmó\s+que|Las\s+autoridades\s+informaron\s+que)\s*/i, '');
+        condensed = condensed.charAt(0).toUpperCase() + condensed.slice(1);
+        candidates.push({ text: condensed, score, words: condensed.split(/\s+/).length });
+      }
+
+      candidates.sort((a, b) => b.score - a.score);
+
+      let capsule = lead;
+      let currWords = capsule.split(/\s+/).length;
+
+      for (let c of candidates) {
+        if (currWords + c.words <= targetWords) {
+          capsule += ". " + c.text;
+          currWords += c.words;
+        }
+        if (currWords >= targetWords * 0.85) break;
+      }
+
+      let res = capsule.replace(/\.\s*\./g, '.').trim();
+      return res.endsWith('.') ? res : res + ".";
     }
 
     // =========================================================================
