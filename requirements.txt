@@ -14,3 +14,5 @@ rouge-score>=0.1.2
 sentencepiece>=0.1.99
 protobuf>=3.20.0
 gradio>=4.20.0
+peft>=0.10.0
+accelerate>=0.30.0
