@@ -28,7 +28,7 @@ base_model = AutoModelForSeq2SeqLM.from_pretrained(DEFAULT_MODEL)
 if os.path.isdir(ADAPTER_DIR):
     print(f"Aplicando y fusionando adaptadores LoRA desde {ADAPTER_DIR}...")
     model = PeftModel.from_pretrained(base_model, ADAPTER_DIR)
-    model = model.merge_and_unload()  # <-- Agrega esta línea
+    model = model.merge_and_unload()
     MODEL_PATH = f"{DEFAULT_MODEL} + LoRA (mt5_radio_cumbres_lora)"
 else:
     print("No se encontraron adaptadores LoRA, usando modelo base.")
@@ -37,6 +37,7 @@ else:
 
 model = model.to(device)
 model.eval()
+
 
 def verificar_fact_guard(resumen: str, articulo: str) -> str:
     """Verifica que las cifras del resumen existan en el artículo original."""
@@ -126,7 +127,7 @@ def resumir_noticia(articulo: str, min_palabras: int = 100, max_palabras: int = 
     t0 = time.time()
     texto_limpio = articulo.strip()
 
-# 1. Lead abstractivo con los primeros 2 párrafos
+    # 1. Lead abstractivo con los primeros 2 párrafos
     parrafos = [p.strip() for p in texto_limpio.split("\n") if p.strip()]
     texto_lead = " ".join(parrafos[:2]) if len(parrafos) >= 2 else texto_limpio
 
@@ -143,8 +144,8 @@ def resumir_noticia(articulo: str, min_palabras: int = 100, max_palabras: int = 
         output_ids = model.generate(
             input_ids=inputs["input_ids"],
             attention_mask=inputs["attention_mask"],
-            min_new_tokens=42,   # <-- Subimos de 35 a 42
-            max_new_tokens=60,   # <-- Subimos de 55 a 60
+            min_new_tokens=42,
+            max_new_tokens=60,
             num_beams=2,
             length_penalty=1.0,
             no_repeat_ngram_size=3,
@@ -156,13 +157,11 @@ def resumir_noticia(articulo: str, min_palabras: int = 100, max_palabras: int = 
     if not lead_abstractivo.endswith("."):
         lead_abstractivo += "."
 
-# 2. Completamos exactamente hasta el rango [objetivo_min, limite_max] (100 - 120 palabras)
+    # 2. Completamos exactamente hasta el rango [objetivo_min, limite_max] (100 - 120 palabras)
     palabras_lead = len(lead_abstractivo.split())
-    objetivo_min = max(100, int(min_palabras))
-    limite_max = min(120, int(max_palabras))
+    objetivo_min = int(min_palabras)  # 100 por defecto
+    limite_max = int(max_palabras)    # 120 por defecto
 
-    # Si hay al menos 3 párrafos, usamos del 3 en adelante; si el texto tiene pocos párrafos,
-    # usamos desde la segunda oración del artículo para asegurar suficiente material.
     if len(parrafos) >= 3:
         cuerpo_restante = " ".join(parrafos[2:])
     else:
@@ -193,9 +192,9 @@ def resumir_noticia(articulo: str, min_palabras: int = 100, max_palabras: int = 
     segundos_aire = num_palabras / 2.0
     latencia = time.time() - t0
 
-    if 100 <= num_palabras <= 120:
+    if objetivo_min <= num_palabras <= limite_max:
         estado = "ÓPTIMO (50s - 60s al aire)"
-    elif num_palabras < 100:
+    elif num_palabras < objetivo_min:
         estado = "CORTO (< 50s al aire — pega una noticia más extensa)"
     else:
         estado = "EXCEDE LÍMITE (> 60s)"
@@ -206,31 +205,22 @@ def resumir_noticia(articulo: str, min_palabras: int = 100, max_palabras: int = 
 
     return resumen, metrica_aire, reporte_fact, metrica_tiempo
 
+
 EJEMPLOS = [
     [
-        "Un consorcio internacional de ingenieros marinos y biólogos ambientales anunció esta semana un hito significativo en la lucha contra la contaminación marina. Su nueva barrera flotante autónoma, impulsada exclusivamente por energía solar y corrientes oceánicas, logró extraer más de mil toneladas de desechos plásticos de la Gran Mancha de Basura del Pacífico en apenas seis meses de operación continua. A diferencia de los modelos anteriores, que requerían el remolque constante de embarcaciones pesadas y consumían grandes cantidades de combustible fósil, esta innovadora estructura utiliza algoritmos de inteligencia artificial y sensores satelitales para navegar de forma independiente hacia las zonas con mayor concentración de residuos. Además, incorpora sistemas acústicos y visuales diseñados específicamente para ahuyentar a la fauna marina, garantizando que peces, tortugas y mamíferos no queden atrapados en las redes de recolección. Según los datos presentados por el equipo de investigación, cerca del 80 % del material recuperado consiste en microplásticos degradados y redes de pesca abandonadas, conocidas como 'redes fantasma', que representan una de las mayores amenazas para la biodiversidad submarina. Una vez extraídos del agua, los residuos son compactados en plataformas flotantes y trasladados a tierra firme, donde una planta especializada los transforma en materia prima para la industria de la construcción y el mobiliario urbano. Los responsables del proyecto señalaron que el éxito de esta fase piloto permitirá desplegar una flota de diez unidades similares antes de que finalice el próximo año. De mantenerse este ritmo de eficiencia, los científicos estiman que sería posible reducir en un 40 % la superficie actual de residuos flotantes en el Pacífico norte durante la próxima década, marcando un precedente optimista para la recuperación de los ecosistemas marinos a nivel global.",
-        90,
-        120,
+        "Un consorcio internacional de ingenieros marinos y biólogos ambientales anunció esta semana un hito significativo en la lucha contra la contaminación marina. Su nueva barrera flotante autónoma, impulsada exclusivamente por energía solar y corrientes oceánicas, logró extraer más de mil toneladas de desechos plásticos de la Gran Mancha de Basura del Pacífico en apenas seis meses de operación continua. A diferencia de los modelos anteriores, que requerían el remolque constante de embarcaciones pesadas y consumían grandes cantidades de combustible fósil, esta innovadora estructura utiliza algoritmos de inteligencia artificial y sensores satelitales para navegar de forma independiente hacia las zonas con mayor concentración de residuos. Además, incorpora sistemas acústicos y visuales diseñados específicamente para ahuyentar a la fauna marina, garantizando que peces, tortugas y mamíferos no queden atrapados en las redes de recolección. Según los datos presentados por el equipo de investigación, cerca del 80 % del material recuperado consiste en microplásticos degradados y redes de pesca abandonadas, conocidas como 'redes fantasma', que representan una de las mayores amenazas para la biodiversidad submarina. Una vez extraídos del agua, los residuos son compactados en plataformas flotantes y trasladados a tierra firme, donde una planta especializada los transforma en materia prima para la industria de la construcción y el mobiliario urbano. Los responsables del proyecto señalaron que el éxito de esta fase piloto permitirá desplegar una flota de diez unidades similares antes de que finalice el próximo año. De mantenerse este ritmo de eficiencia, los científicos estiman que sería posible reducir en un 40 % la superficie actual de residuos flotantes en el Pacífico norte durante la próxima década, marcando un precedente optimista para la recuperación de los ecosistemas marinos a nivel global."
     ],
     [
-        "Un equipo internacional de geofísicos, liderado por la doctora Elena Rostova de la Universidad de Zúrich y el ingeniero Carlos Mendoza del Laboratorio de Propulsión a Chorro (JPL), anunció este lunes el descubrimiento de un extenso acuífero subterráneo bajo la región marciana de Elysium Planitia. El hallazgo se logró tras analizar más de 1.400 registros sísmicos recopilados por la sonda InSight entre 2018 y 2022. Según el estudio publicado en la revista Nature Geoscience, el depósito se encuentra a una profundidad de entre 11,5 y 20 kilómetros bajo la corteza rocosa. Los cálculos preliminares indican que el volumen de agua atrapada en las fracturas minerales sería suficiente para cubrir toda la superficie del planeta rojo con un océano global de aproximadamente 1,5 kilómetros de profundidad, superando en un 30 % las estimaciones previas realizadas por la Agencia Espacial Europea (ESA). 'Este descubrimiento resuelve el misterio sobre el destino de los antiguos océanos que cubrieron Marte hace más de 3.000 millones de años', explicó la doctora Rostova durante la conferencia de prensa en Pasadena, California. Por su parte, el director de ciencias planetarias de la NASA, Marcus Vance, señaló que, aunque la profundidad actual impide su extracción inmediata para futuras misiones tripuladas, el hallazgo transforma por completo la búsqueda de vida microbiana extraterrestre. Los investigadores utilizaron modelos matemáticos avanzados y supercomputadoras capaces de procesar 45 terabytes de datos acústicos para descartar que las señales correspondieran a depósitos de magma o dióxido de carbono congelado. El consorcio científico ya prepara una nueva propuesta de misión orbital, presupuestada en 850 millones de dólares, para mapear con mayor precisión la extensión total de estas reservas hídricas antes de 2034.",
-        90,
-        120,
+        "Un equipo internacional de geofísicos, liderado por la doctora Elena Rostova de la Universidad de Zúrich y el ingeniero Carlos Mendoza del Laboratorio de Propulsión a Chorro (JPL), anunció este lunes el descubrimiento de un extenso acuífero subterráneo bajo la región marciana de Elysium Planitia. El hallazgo se logró tras analizar más de 1.400 registros sísmicos recopilados por la sonda InSight entre 2018 y 2022. Según el estudio publicado en la revista Nature Geoscience, el depósito se encuentra a una profundidad de entre 11,5 y 20 kilómetros bajo la corteza rocosa. Los cálculos preliminares indican que el volumen de agua atrapada en las fracturas minerales sería suficiente para cubrir toda la superficie del planeta rojo con un océano global de aproximadamente 1,5 kilómetros de profundidad, superando en un 30 % las estimaciones previas realizadas por la Agencia Espacial Europea (ESA). 'Este descubrimiento resuelve el misterio sobre el destino de los antiguos océanos que cubrieron Marte hace más de 3.000 millones de años', explicó la doctora Rostova durante la conferencia de prensa en Pasadena, California. Por su parte, el director de ciencias planetarias de la NASA, Marcus Vance, señaló que, aunque la profundidad actual impide su extracción inmediata para futuras misiones tripuladas, el hallazgo transforma por completo la búsqueda de vida microbiana extraterrestre. Los investigadores utilizaron modelos matemáticos avanzados y supercomputadoras capaces de procesar 45 terabytes de datos acústicos para descartar que las señales correspondieran a depósitos de magma o dióxido de carbono congelado. El consorcio científico ya prepara una nueva propuesta de misión orbital, presupuestada en 850 millones de dólares, para mapear con mayor precisión la extensión total de estas reservas hídricas antes de 2034."
     ],
     [
-        "El rápido despliegue de la inteligencia artificial y los servicios en la nube ha disparado la demanda energética de las infraestructuras digitales en Estados Unidos. Según un estudio publicado este lunes en la revista científica Nature, los grandes centros de datos del país norteamericano ya consumen una cantidad de electricidad equivalente al gasto energético anual de todo Chile.   La investigación revela que estas instalaciones acaparan actualmente el 1,8 % del consumo eléctrico total de Estados Unidos. Asimismo, los autores del informe advierten que las emisiones de carbono asociadas a la operación de estos servidores se han triplicado desde 2018, impulsadas por la necesidad de entrenar y mantener activos modelos computacionales cada vez más complejos.   El impacto económico y tecnológico de esta industria también fue analizado esta semana por el Banco Interamericano de Desarrollo (BID). En su más reciente reporte presentado en Washington, el organismo internacional estima que América Latina podría aumentar su crecimiento económico en un 5,1 % durante la próxima década si logra adoptar de manera efectiva las herramientas de inteligencia artificial, lo que además impulsaría una mejora del 4,2 % en los niveles de empleo regional.   Por su parte, en Europa avanzan las medidas para supervisar este ecosistema. El presidente de la Comisión Nacional de los Mercados y la Competencia (CNMC) en España anunció planes para reforzar su sede en Barcelona, donde actualmente operan cerca de cien trabajadores, con el objetivo de convertirla en un centro clave para la regulación de la inteligencia artificial y las grandes plataformas digitales.",
-        90,
-        120,
+        "El rápido despliegue de la inteligencia artificial y los servicios en la nube ha disparado la demanda energética de las infraestructuras digitales en Estados Unidos. Según un estudio publicado este lunes en la revista científica Nature, los grandes centros de datos del país norteamericano ya consumen una cantidad de electricidad equivalente al gasto energético anual de todo Chile.   La investigación revela que estas instalaciones acaparan actualmente el 1,8 % del consumo eléctrico total de Estados Unidos. Asimismo, los autores del informe advierten que las emisiones de carbono asociadas a la operación de estos servidores se han triplicado desde 2018, impulsadas por la necesidad de entrenar y mantener activos modelos computacionales cada vez más complejos.   El impacto económico y tecnológico de esta industria también fue analizado esta semana por el Banco Interamericano de Desarrollo (BID). En su más reciente reporte presentado en Washington, el organismo internacional estima que América Latina podría aumentar su crecimiento económico en un 5,1 % durante la próxima década si logra adoptar de manera efectiva las herramientas de inteligencia artificial, lo que además impulsaría una mejora del 4,2 % en los niveles de empleo regional.   Por su parte, en Europa avanzan las medidas para supervisar este ecosistema. El presidente de la Comisión Nacional de los Mercados y la Competencia (CNMC) en España anunció planes para reforzar su sede en Barcelona, donde actualmente operan cerca de cien trabajadores, con el objetivo de convertirla en un centro clave para la regulación de la inteligencia artificial y las grandes plataformas digitales."
     ],
     [
-        "La Comisión Europea anunció este martes en Bruselas la aprobación de un ambicioso paquete financiero destinado a acelerar la producción industrial de baterías de estado sólido para vehículos eléctricos. La iniciativa, respaldada por la comisaria de Energía, Kadri Simson, y el ministro de Economía alemán, Robert Habeck, busca reducir en un 65 % la dependencia tecnológica de los fabricantes europeos respecto a los proveedores asiáticos antes de 2032. El programa contará con una inversión pública inicial de 4.200 millones de euros, a la que se sumarán otros 6.800 millones aportados por un consorcio de 28 empresas automotrices y centros tecnológicos liderados por grupos como Volkswagen, Stellantis y la firma francesa Saft. Según las estimaciones técnicas presentadas durante la cumbre, esta nueva generación de baterías permitirá aumentar la autonomía de los automóviles en un 45 %, alcanzando hasta 950 kilómetros con una sola carga de apenas doce minutos. 'Estamos ante el salto tecnológico más relevante para la descarbonización del transporte en las últimas dos décadas', afirmó la doctora Clara Lindqvist, directora del Instituto Europeo de Innovación Energética en Estocolmo. El proyecto contempla la construcción de cuatro megafábricas piloto ubicadas en España, Alemania, Polonia y Suecia, las cuales generarán aproximadamente 14.500 empleos directos altamente cualificados. Los primeros prototipos comerciales comenzarán sus pruebas en carretera a mediados de 2028, con el objetivo de reducir el costo de fabricación por kilovatio-hora por debajo de los 75 dólares, igualando así el precio de los vehículos tradicionales de combustión interna.",
-        90,
-        120,
+        "La Comisión Europea anunció este martes en Bruselas la aprobación de un ambicioso paquete financiero destinado a acelerar la producción industrial de baterías de estado sólido para vehículos eléctricos. La iniciativa, respaldada por la comisaria de Energía, Kadri Simson, y el ministro de Economía alemán, Robert Habeck, busca reducir en un 65 % la dependencia tecnológica de los fabricantes europeos respecto a los proveedores asiáticos antes de 2032. El programa contará con una inversión pública inicial de 4.200 millones de euros, a la que se sumarán otros 6.800 millones aportados por un consorcio de 28 empresas automotrices y centros tecnológicos liderados por grupos como Volkswagen, Stellantis y la firma francesa Saft. Según las estimaciones técnicas presentadas durante la cumbre, esta nueva generación de baterías permitirá aumentar la autonomía de los automóviles en un 45 %, alcanzando hasta 950 kilómetros con una sola carga de apenas doce minutos. 'Estamos ante el salto tecnológico más relevante para la descarbonización del transporte en las últimas dos décadas', afirmó la doctora Clara Lindqvist, directora del Instituto Europeo de Innovación Energética en Estocolmo. El proyecto contempla la construcción de cuatro megafábricas piloto ubicadas en España, Alemania, Polonia y Suecia, las cuales generarán aproximadamente 14.500 empleos directos altamente cualificados. Los primeros prototipos comerciales comenzarán sus pruebas en carretera a mediados de 2028, con el objetivo de reducir el costo de fabricación por kilovatio-hora por debajo de los 75 dólares, igualando así el precio de los vehículos tradicionales de combustión interna."
     ],
     [
-        "Un equipo multidisciplinario de biólogos marinos, liderado por la doctora Sofía Valdivia del Instituto de Ciencias del Mar y Limnología (ICML) y el investigador canadiense Thomas Miller, anunció este jueves en Puerto Morelos, Quintana Roo, el éxito de un proyecto pionero para restaurar el Sistema Arrecifal Mesoamericano. Tras cuatro años de investigación intensiva, los especialistas lograron sembrar y estabilizar más de 18.500 colonias de coral diseñadas mediante selección asistida para soportar temperaturas oceánicas de hasta 32,5 grados centígrados. El proyecto, financiado con un fondo mixto de 14,8 millones de dólares aportados por el Banco Mundial y la Fundación Arrecifes Vivos, surge como respuesta directa a las olas de calor marino que en 2023 y 2024 provocaron el blanqueamiento de casi el 60 % de los corales en la región. Mediante técnicas de microfragmentación acelerada y reproducción sexual controlada en 12 laboratorios flotantes, el equipo redujo de cinco años a apenas catorce meses el tiempo necesario para que las crías alcancen un tamaño apto para su trasplante al lecho marino. 'No estamos simplemente reforestando el océano con las mismas especies vulnerables del pasado; estamos acelerando procesos evolutivos naturales para garantizar que estos ecosistemas sobrevivan a las condiciones climáticas proyectadas para 2050', explicó la doctora Valdivia durante la presentación oficial de los resultados. Por su parte, el ministro de Medio Ambiente, Ricardo Elizondo, destacó que las nuevas barreras coralinas ya muestran una tasa de supervivencia del 88 %, superando por amplio margen el 35 % registrado en iniciativas anteriores. Además de proteger la biodiversidad de más de 500 especies de peces y crustáceos, la recuperación de estos arrecifes resulta vital para la economía local. Según datos de la Cámara Nacional de Turismo, la barrera coralina amortigua hasta el 97 % de la energía de las olas durante huracanes de categoría 4 y sostiene actividades económicas valoradas en 2.300 millones de dólares anuales. Con el respaldo de 450 voluntarios y pescadores locales capacitados, el consorcio científico planea expandir el programa hacia Belice y Honduras antes de finalizar 2028, con la meta de restaurar 120 hectáreas adicionales de ecosistema submarino.",
-        90,
-        120
+        "Un equipo multidisciplinario de biólogos marinos, liderado por la doctora Sofía Valdivia del Instituto de Ciencias del Mar y Limnología (ICML) y el investigador canadiense Thomas Miller, anunció este jueves en Puerto Morelos, Quintana Roo, el éxito de un proyecto pionero para restaurar el Sistema Arrecifal Mesoamericano. Tras cuatro años de investigación intensiva, los especialistas lograron sembrar y estabilizar más de 18.500 colonias de coral diseñadas mediante selección asistida para soportar temperaturas oceánicas de hasta 32,5 grados centígrados. El proyecto, financiado con un fondo mixto de 14,8 millones de dólares aportados por el Banco Mundial y la Fundación Arrecifes Vivos, surge como respuesta directa a las olas de calor marino que en 2023 y 2024 provocaron el blanqueamiento de casi el 60 % de los corales en la región. Mediante técnicas de microfragmentación acelerada y reproducción sexual controlada en 12 laboratorios flotantes, el equipo redujo de cinco años a apenas catorce meses el tiempo necesario para que las crías alcancen un tamaño apto para su trasplante al lecho marino. 'No estamos simplemente reforestando el océano con las mismas especies vulnerables del pasado; estamos acelerando procesos evolutivos naturales para garantizar que estos ecosistemas sobrevivan a las condiciones climáticas proyectadas para 2050', explicó la doctora Valdivia durante la presentación oficial de los resultados. Por su parte, el ministro de Medio Ambiente, Ricardo Elizondo, destacó que las nuevas barreras coralinas ya muestran una tasa de supervivencia del 88 %, superando por amplio margen el 35 % registrado en iniciativas anteriores. Además de proteger la biodiversidad de más de 500 especies de peces y crustáceos, la recuperación de estos arrecifes resulta vital para la economía local. Según datos de la Cámara Nacional de Turismo, la barrera coralina amortigua hasta el 97 % de la energía de las olas durante huracanes de categoría 4 y sostiene actividades económicas valoradas en 2.300 millones de dólares anuales. Con el respaldo de 450 voluntarios y pescadores locales capacitados, el consorcio científico planea expandir el programa hacia Belice y Honduras antes de finalizar 2028, con la meta de restaurar 120 hectáreas adicionales de ecosistema submarino."
     ]
 ]
 
@@ -242,20 +232,6 @@ demo = gr.Interface(
             label="Artículo Periodístico Original (Español)",
             placeholder="Pega aquí el cuerpo completo de la noticia...",
         ),
-        gr.Slider(
-            minimum=40,
-            maximum=90,
-            value=55,
-            step=5,
-            label="Longitud mínima objetivo (palabras)",
-        ),
-        gr.Slider(
-            minimum=60,
-            maximum=120,
-            value=115,
-            step=5,
-            label="Límite máximo estricto Radio Cumbres (<= 120 palabras)",
-        ),
     ],
     outputs=[
         gr.Textbox(lines=6, label="Guion Generado para Locución (60 Segundos)"),
@@ -266,7 +242,7 @@ demo = gr.Interface(
     title="Radio Cumbres — News in 60 Seconds (Interfaz v1)",
     description=(
         f"Resumidor abstractivo con {MODEL_PATH} y verificación Fact Guard. "
-        "Restricción operativa: máximo 120 palabras (60 segundos al aire)."
+        "Restricción operativa fija: entre 100 y 120 palabras (50 a 60 segundos al aire)."
     ),
     examples=EJEMPLOS,
 )
