@@ -58,4 +58,4 @@ cepesin_chuy/
 |   ├── emilio_baseline.ipynb
 |   └── METRICAS_RD.ipynb
 └── dimensiones/
-    ├── Todas las dimensiones de inglés 
+    └── Todas las dimensiones de inglés 
