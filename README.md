@@ -51,7 +51,7 @@ cepesin_chuy/
 │   ├── spanish_val.jsonl
 │   └── spanish_test.jsonl
 ├── notebooks/
-|   ├── Entrenamiento(ReporteFinal).ipynb
+|   ├── Entrenamiento(ReporteFinal).ipynb  **Evaluable**
 |   ├── RNAP_Track2_AKS(CP3).ipynb
 |   ├── RNAP_Track2_AKS.ipynb
 |   ├── Modelo_preentrenado.ipynb
