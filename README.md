@@ -30,8 +30,8 @@ The morning radio host has **strictly 60 seconds per news story** on air. At a s
    * **Extractive Baseline:** TF-IDF sentence scoring (`notebooks/emilio_baseline.ipynb`).
    * **Zero-Shot Pretrained Model:** Unadjusted `csebuetnlp/mT5_multilingual_XLSum` (`notebooks/Modelo_preentrenado.ipynb`).
 3. **Transformer Solution (Phase 2 - Fine-Tuning):**
-   * We fine-tuned **`csebuetnlp/mT5_multilingual_XLSum`** on the Spanish news dataset (`notebooks/RNAP_Track2_AKS(CP3).ipynb` and `notebooks/entrenamiento.ipynb`) using beam search (`num_beams=4`, `no_repeat_ngram_size=3`) and a strict `<= 120` word limit.
-4. **Local Interface v1 (`app/app.py`):**
+   * We fine-tuned **`csebuetnlp/mT5_multilingual_XLSum`** on the Spanish news dataset (`notebooks/RNAP_Track2_AKS(CP3).ipynb` and `notebooks/Entrenamiento(ReporteFinal).ipynb`).
+4. **Local Interface v1 (`app/app_penitencia_final.py`):**
    * A Gradio web interface running locally to load the heavy model weights without cloud RAM limitations.
 
 ---
@@ -44,16 +44,18 @@ cepesin_chuy/
 ├── PROGRESS.md
 ├── requirements.txt
 ├── app/
-│   └── app.py
+│   └── app_penitencia_final.py
 ├── data/
 │   ├── README.md
 │   ├── spanish_train_sample.jsonl
 │   ├── spanish_val.jsonl
 │   └── spanish_test.jsonl
-└── notebooks/
-    ├── entrenamiento.ipynb
-    ├── RNAP_Track2_AKS(CP3).ipynb
-    ├── RNAP_Track2_AKS.ipynb
-    ├── Modelo_preentrenado.ipynb
-    ├── emilio_baseline.ipynb
-    └── METRICAS_RD.ipynb
+├── notebooks/
+|   ├── Entrenamiento(ReporteFinal).ipynb
+|   ├── RNAP_Track2_AKS(CP3).ipynb
+|   ├── RNAP_Track2_AKS.ipynb
+|   ├── Modelo_preentrenado.ipynb
+|   ├── emilio_baseline.ipynb
+|   └── METRICAS_RD.ipynb
+└── dimensiones/
+    ├── Todas las dimensiones de inglés 
