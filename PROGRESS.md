@@ -6,6 +6,22 @@ Primary Metrics: **ROUGE (ROUGE-1, ROUGE-2, ROUGE-L) and Strict Word Count Limit
 
 ---
 
+## CP4 - 2026-11-12
+- What we have done: Built and connected the local v1 Gradio interface (`app/app.py`) and `requirements.txt`, updated `README.md` and `data/README.md` for the restructured repository, and documented 5 error cases with root causes in the evaluation notebooks.
+- What we haven't done yet: Final Section 6 attention analysis and live judge test for Phase 3.
+- Next step: Merge `reestructuracion` into `main`, finish Section 6, and tag release `v1.0`.
+- Who did what: Kevin Adrián Hernández Cayetano (local Gradio interface `app/app.py`, `requirements.txt`, README/PROGRESS documentation, and error analysis), Mia Valentina Pérez Cepeda (completion of CP3 fine-tuning and metrics in `METRICAS_RD.ipynb`), Israel Aleksander Sánchez González (branch restructuring, dataset split update, and `RNAP_Track2_AKS(CP3).ipynb`), Emilio Antonio Gómez Montes (`emilio_baseline.ipynb` and test verification).
+
+---
+
+## CP3 - 2026-11-12
+- What we have done: Restructured the repository, replaced outdated toy data with the official JSONL splits (`spanish_train_sample.jsonl`, `spanish_val.jsonl`, `spanish_test.jsonl`), fixed the CP1/CP2 baseline and pretrained `csebuetnlp/mT5_multilingual_XLSum` notebooks, and implemented the fine-tuning pipeline in `RNAP_Track2_AKS(CP3).ipynb`.
+- What we haven't done yet: Connect the local v1 interface and complete the 5 error case explanations (completed in CP4).
+- Next step: Run error case extraction and connect `app/app.py` for CP4.
+- Who did what: Israel Aleksander Sánchez González (repository restructuring, CP1/CP2 fixes, and initial fine-tuning notebook), Mia Valentina Pérez Cepeda (fine-tuning execution and ROUGE evaluation), Kevin Adrián Hernández Cayetano (`Modelo_preentrenado.ipynb` and documentation), Emilio Antonio Gómez Montes (`emilio_baseline.ipynb`).
+
+---
+
 ## CP2 - 2026-11-05
 - **What we have done**:
   - Defined the challenge problem: developing an automated Spanish news summarizer for **Radio Cumbres** (a local radio station in Nuevo León) where the morning host has exactly 60 seconds per news story, requiring summaries strictly within 120 words ($\le 60$ seconds at 2 words/sec) with zero hallucinated figures or names.
